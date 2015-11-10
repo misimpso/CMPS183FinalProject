@@ -14,3 +14,8 @@
 ## >>> rows=db(db.mytable.myfield=='value').select(db.mytable.ALL)
 ## >>> for row in rows: print row.id, row.myfield
 #########################################################################
+
+db.define_table('post',
+             Field('author', db.auth_user, default=auth.user_id),
+             Field('message_content', 'text'),
+            )

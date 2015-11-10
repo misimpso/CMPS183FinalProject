@@ -8,17 +8,16 @@
 ## - download is for downloading files uploaded in the db (does streaming)
 #########################################################################
 
+@auth.requires_login()
 def index():
-    """
-    example action using the internationalization operator T and flash
-    rendered by views/default/index.html or views/generic.html
+    posts = db(db.post.id >= 0).select()
+    form = SQLFORM.factory(Field('message', 'text'))
+    return dict(form=form, posts=posts)
 
-    if you need a simple wiki simply replace the two lines below with:
-    return auth.wiki()
-    """
-    logger.info("Here we are, in the controller.")
-    response.flash = T("Hello World")
-    return dict(message=T('Welcome to web2py!'))
+@auth.requires_signature()
+def add_msg():
+    db.post.insert(message_content = request.vars.msg)
+    return "ok"
 
 
 def user():
