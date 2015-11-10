@@ -8,7 +8,7 @@ import time
 @auth.requires_login()
 def index():
     draft_id = gluon_utils.web2py_uuid()
-    return dict(message_id=draft_id)
+    return dict(draft_id=draft_id)
 
 @auth.requires_signature()
 def add_msg():
@@ -25,8 +25,9 @@ def load_messages():
     # d = {}
     # for r in rows:
     #     d[r.message_id] = {'message_content': r.message_content}
-    d = {r.message_id: {'message_content': r.message_content} for r in rows}
-    time.sleep(3)
+    d = {r.message_id: {'message_content': r.message_content,
+                        'is_draft': r.is_draft}
+         for r in rows}
     return response.json(dict(msg_dict=d))
 
 def user():

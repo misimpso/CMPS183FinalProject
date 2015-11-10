@@ -11,7 +11,9 @@
   <form action="#" class="form-horizontal" enctype="multipart/form-data" method="post">
   <div class="form-group" id="no_table_message__row">
   <label class="control-label col-sm-3" for="no_table_message" id="no_table_message__label">Message</label>
-  <div class="col-sm-9"><textarea class="text form-control" cols="40" id="no_table_message" name="message" rows="10"></textarea>
+  <div class="col-sm-9">
+  <textarea value="{% active_draft %}" class="text form-control" cols="40" id="no_table_message" name="message" rows="10">
+  </textarea>
   <span class="help-block"></span></div></div>
   <div class="form-group" id="submit_record__row"><div class="col-sm-9 col-sm-offset-3">
   <input class="btn btn-primary" type="submit" value="Submit" /></div>
@@ -60,6 +62,8 @@ $(function() {
     tripleDelimiters: ['{%%', '%%}'],
     data: {
       msg_dict: {},
+      draft_id: "{{=draft_id}}",
+      active_draft: "",
       loading: true
     },
   });
@@ -77,15 +81,28 @@ $(function() {
 
 
   function send_message(msg_content, is_draft) {
+    var call_draft_id = MAIN.get('draft_id');
     $.ajax("{{=URL('default', 'add_msg', user_signature=True)}}",
             {
               data: {
                 msg: msg_content,
                 is_draft: is_draft,
-                msg_id: "{{=message_id}}"
+                msg_id: call_draft_id
               },
               method: 'POST',
-              success: function() {},
+              success: function() {
+                // Reflect in the list of drafts the update to this draft.
+                var msg_dict = MAIN.get('msg_dict');
+                if (call_draft_id in msg_dict) {
+                  msg_dict[call_draft_id]['message_content'] = msg_content;
+                } else {
+                  msg_dict[call_draft_id] = {
+                    message_content: msg_content,
+                    is_draft: is_draft
+                  }
+                }
+                MAIN.set('msg_dict', msg_dict);
+              },
               error: function() {}
             }
     );
@@ -95,7 +112,7 @@ $(function() {
 
   // Called every 10s
   function periodic_send() {
-    var new_msg = $("div#new_msg textarea").val();
+    var new_msg = MAIN.get('active_draft');
     if (new_msg !== msg) {
       msg = new_msg;
       send_message(new_msg, true);
