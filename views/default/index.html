@@ -16,14 +16,14 @@
   </textarea>
   <span class="help-block"></span></div></div>
   <div class="form-group" id="submit_record__row"><div class="col-sm-9 col-sm-offset-3">
-  <input class="btn btn-primary" type="submit" value="Submit" /></div>
+  <input class="btn btn-primary" type="submit" value="Submit" on-click="addmsg"/></div>
   </div></form>
 </div>
 
 <h2>Drafts:</h2>
 <div class="message_list">
   {% #msg_dict:msg_id %}
-    {% #if is_draft %}
+    {% #if is_draft === true %}
       <div class="message">
         {% message_content %}
         <button class="btn btn-success" data-msgid="{% msg_id %}">Edit</button>
@@ -35,7 +35,7 @@
 <h2>Messages:</h2>
 <div class="message_list">
   {% #msg_dict:msg_id %}
-    {% #if !is_draft %}
+    {% #if is_draft === false %}
       <div class="message">
         {% message_content %}
       </div>
@@ -79,7 +79,6 @@ $(function() {
           }
   );
 
-
   function send_message(msg_content, is_draft) {
     var call_draft_id = MAIN.get('draft_id');
     $.ajax("{{=URL('default', 'add_msg', user_signature=True)}}",
@@ -91,10 +90,11 @@ $(function() {
               },
               method: 'POST',
               success: function() {
-                // Reflect in the list of drafts the update to this draft.
+                // Reflect in the list of drafts or messages the update sent to the server.
                 var msg_dict = MAIN.get('msg_dict');
                 if (call_draft_id in msg_dict) {
                   msg_dict[call_draft_id]['message_content'] = msg_content;
+                  msg_dict[call_draft_id]['is_draft'] = is_draft;
                 } else {
                   msg_dict[call_draft_id] = {
                     message_content: msg_content,
@@ -119,11 +119,27 @@ $(function() {
     }
   }
 
+  function generateUUID(){
+    var d = new Date().getTime();
+    if(window.performance && typeof window.performance.now === "function"){
+        d += performance.now();; //use high-precision timer if available
+    }
+    var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = (d + Math.random()*16)%16 | 0;
+        d = Math.floor(d/16);
+        return (c=='x' ? r : (r&0x3|0x8)).toString(16);
+    });
+    return uuid;
+  }
+
   // This code is called when the submit button is pressed.
-  $("div#new_msg input[type=submit]").on("click", function() {
-    var msg_content = $("div#new_msg textarea").val();
+  MAIN.on("addmsg", function(e) {
+    var msg_content = MAIN.get('active_draft');
     // Send content back to server.
     send_message(msg_content, false);
+    MAIN.set('active_draft', '');
+    // Invent new random draft_id.
+    MAIN.set('draft_id', generateUUID());
     return false;
   });
 
