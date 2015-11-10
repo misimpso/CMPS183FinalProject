@@ -3,20 +3,12 @@
 
 from gluon import utils as gluon_utils
 import json
+import time
 
 @auth.requires_login()
 def index():
-    rows = db(db.post.author == auth.user_id).select()
-    posts, drafts = [], []
-    for r in rows:
-        if r.is_draft:
-            drafts.append(r)
-        else:
-            posts.append(r)
-    form = SQLFORM.factory(Field('message', 'text'))
     draft_id = gluon_utils.web2py_uuid()
-    return dict(form=form, posts=posts, drafts=drafts,
-                message_id=draft_id)
+    return dict(message_id=draft_id)
 
 @auth.requires_signature()
 def add_msg():
@@ -25,6 +17,17 @@ def add_msg():
             message_content=request.vars.msg,
             is_draft=json.loads(request.vars.is_draft))
     return "ok"
+
+@auth.requires_signature()
+def load_messages():
+    """Loads all messages for the user."""
+    rows = db(db.post.author == auth.user_id).select()
+    # d = {}
+    # for r in rows:
+    #     d[r.message_id] = {'message_content': r.message_content}
+    d = {r.message_id: {'message_content': r.message_content} for r in rows}
+    time.sleep(3)
+    return response.json(dict(msg_dict=d))
 
 def user():
     """
