@@ -1,24 +1,30 @@
 # -*- coding: utf-8 -*-
 # this file is released under public domain and you can use without limitations
 
-#########################################################################
-## This is a sample controller
-## - index is the default action of any application
-## - user is required for authentication and authorization
-## - download is for downloading files uploaded in the db (does streaming)
-#########################################################################
+from gluon import utils as gluon_utils
+import json
 
 @auth.requires_login()
 def index():
-    posts = db(db.post.id >= 0).select()
+    rows = db(db.post.author == auth.user_id).select()
+    posts, drafts = [], []
+    for r in rows:
+        if r.is_draft:
+            drafts.append(r)
+        else:
+            posts.append(r)
     form = SQLFORM.factory(Field('message', 'text'))
-    return dict(form=form, posts=posts)
+    draft_id = gluon_utils.web2py_uuid()
+    return dict(form=form, posts=posts, drafts=drafts,
+                message_id=draft_id)
 
 @auth.requires_signature()
 def add_msg():
-    db.post.insert(message_content = request.vars.msg)
+    db.post.update_or_insert((db.post.message_id == request.vars.msg_id),
+            message_id=request.vars.msg_id,
+            message_content=request.vars.msg,
+            is_draft=json.loads(request.vars.is_draft))
     return "ok"
-
 
 def user():
     """

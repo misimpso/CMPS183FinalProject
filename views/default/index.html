@@ -5,6 +5,16 @@
 {{=form}}
 </div>
 
+<h2>Drafts:</h2>
+<div class="message_list">
+  {{for p in drafts:}}
+    <div class="message">
+      {{=p.message_content}}
+    </div>
+  {{pass}}
+</div>
+
+
 <h2>Messages:</h2>
 <div class="message_list">
   {{for p in posts:}}
@@ -16,18 +26,41 @@
 
 <script>
 $(function() {
-  $("div#new_msg input[type=submit]").on("click", function() {
-    var msg_content = $("div#new_msg textarea").val();
-    // Send content back to server.
+
+  function send_message(msg_content, is_draft) {
     $.ajax("{{=URL('default', 'add_msg', user_signature=True)}}",
             {
-              data: {msg: msg_content},
+              data: {
+                msg: msg_content,
+                is_draft: is_draft,
+                msg_id: "{{=message_id}}"
+              },
               method: 'POST',
               success: function() {},
               error: function() {}
             }
     );
+  }
+
+  var msg = $("div#new_msg textarea").val();
+
+  // Called every 10s
+  function periodic_send() {
+    var new_msg = $("div#new_msg textarea").val();
+    if (new_msg !== msg) {
+      msg = new_msg;
+      send_message(new_msg, true);
+    }
+  }
+
+  // This code is called when the submit button is pressed.
+  $("div#new_msg input[type=submit]").on("click", function() {
+    var msg_content = $("div#new_msg textarea").val();
+    // Send content back to server.
+    send_message(msg_content, false);
     return false;
   });
+
+  setInterval(periodic_send, 10000);
 });
 </script>
