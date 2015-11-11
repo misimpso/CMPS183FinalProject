@@ -22,9 +22,6 @@ def add_msg():
 def load_messages():
     """Loads all messages for the user."""
     rows = db(db.post.author == auth.user_id).select()
-    # d = {}
-    # for r in rows:
-    #     d[r.message_id] = {'message_content': r.message_content}
     d = {r.message_id: {'message_content': r.message_content,
                         'is_draft': r.is_draft}
          for r in rows}
