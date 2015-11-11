@@ -26,7 +26,7 @@
     {% #if is_draft === true %}
       <div class="message">
         {% message_content %}
-        <button class="btn btn-success" data-msgid="{% msg_id %}">Edit</button>
+        <button class="btn btn-success" data-msgid="{% msg_id %}" on-click="edit-draft">Edit</button>
       </div>
     {% /if %}
   {% /msg_dict %}
@@ -108,13 +108,20 @@ $(function() {
     );
   }
 
-  var msg = $("div#new_msg textarea").val();
-
-  // Called every 10s
+  // Called every 10s, or upon switching drafts.
   function periodic_send() {
     var new_msg = MAIN.get('active_draft');
-    if (new_msg !== msg) {
-      msg = new_msg;
+    var msg_dict = MAIN.get('msg_dict');
+    var draft_id = MAIN.get('draft_id');
+    if (draft_id in msg_dict) {
+      // There is already a draft.  Check if it is modified.
+      var old_msg = msg_dict[draft_id]['message_content'];
+      if (new_msg !== old_msg) {
+        // Yes, it is modified.  Send it to the server.
+        send_message(new_msg, true);
+      }
+    } else if ($.trim(new_msg).length > 0) {
+      // This is a brand new draft, send it to the server.
       send_message(new_msg, true);
     }
   }
@@ -141,6 +148,19 @@ $(function() {
     // Invent new random draft_id.
     MAIN.set('draft_id', generateUUID());
     return false;
+  });
+
+  // Listens to click on Edit buttons for drafts.
+  MAIN.on("edit-draft", function(e) {
+    // First, we send to the server the current draft, to avoid losing it.
+    periodic_send();
+    var t = $(e.original.target);
+    var clicked_id = t.data('msgid');  // To set it, you could do .data('msgid', 'my id');
+    var msg_dict = MAIN.get('msg_dict');
+    // First, display the draft text in the editing area.
+    MAIN.set('active_draft', msg_dict[clicked_id]['message_content']);
+    // Sets the id of the draft being edited.
+    MAIN.set('draft_id', clicked_id);
   });
 
   setInterval(periodic_send, 10000);
