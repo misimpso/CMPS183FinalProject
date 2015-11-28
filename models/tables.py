@@ -15,9 +15,16 @@
 ## >>> for row in rows: print row.id, row.myfield
 #########################################################################
 
-db.define_table('post',
-             Field('author', db.auth_user, default=auth.user_id),
-             Field('message_content', 'text'),
-             Field('is_draft', 'boolean', default=False),
-             Field('message_id'), # To uniquely identify drafts and messages.
-            )
+db.define_table('deck',
+                Field('players'),
+                Field('deck_id'),
+                Field('deck_cards')
+                )
+
+db.define_table('player_hand',
+                Field('player_id', default=auth.user_id),
+                Field('player_cards'),
+                Field('parent_deck', 'reference deck'),
+                Field('in_game', default=False),
+                Field('winner', default=False)
+                )
