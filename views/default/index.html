@@ -1,2 +1,212 @@
 {{extend 'layout.html'}}
 
+<div id="target"></div>
+
+<script id="template" type="text/ractive">
+
+<div class="title">
+    <h1 id="gametitle">Big Two</h1>
+    {{if auth.user_id is None:}}
+        <h1 class="loginprompt">Log In or Sign Up to Add a New Board or Post</h1>
+        <div class="main_login">
+            {{=A('Log In', _class='btn btn-warning', _href=URL('default', 'user', args=['login']))}}
+            {{=A('Sign Up', _class='btn btn-success', _href=URL('default', 'user', args=['register']))}}
+        </div>
+    {{else:}}
+        <br>
+        <button class="btn btn-primary" on-click="joingame">Join Queue</button>
+        <br><br><br>
+        {% #playerQueue %}
+            {% #if player_id == "{{=auth.user_id}}" && waiting %}
+                <div id="loadspinner"><i class="fa fa-spinner fa-pulse fa-4x"></i></div>
+                <p>Waiting for more players</p>
+                <p>{% queueSize %} player(s) in queue</p>
+            {% else %}
+                {% #if player_id == "{{=auth.user_id}}" && ingame %}
+                    <a class="btn btn-danger" href="{% gameURL+ "/" +deck_id %}" on-click="cleansePlayerQueue">Join Game</a>
+                {% /if %}
+            {% /if %}
+        {% /playerQueue %}
+    {{pass}}
+</div>
+</script>
+
+<script>
+    $(function() {
+        var MAIN = new Ractive({
+            el: '#target',
+            template: '#template',
+            delimiters: ['{%', '%}'],
+            tripleDelimiters: ['{%%', '%%}'],
+            data: {
+                playerQueue: [],
+                deck_id: 0,
+                queueSize: 0,
+                loading: false,
+                waiting1: false,
+                gameURL: "{{=URL('default', 'play')}}"
+            }
+        });
+
+        $.ajax("{{=URL('default', 'loadQueue', user_signature=True)}}",
+                {
+                    method: 'POST',
+                    success: function (data) {
+                        MAIN.set('playerQueue', data['playerQueue']);
+                        var playerQueue = MAIN.get('playerQueue');
+                        console.log(playerQueue);
+                        MAIN.set('queueSize', playerQueue.length);
+                        //console.log(playerQueue);
+                    }
+                }
+        );
+
+        function periodicLoad() {
+            $.ajax("{{=URL('default', 'loadQueue', user_signature=True)}}",
+                    {
+                        method: 'POST',
+                        success: function (data) {
+                            MAIN.set('playerQueue', data['playerQueue']);
+                            var playerQueue = MAIN.get('playerQueue');
+                            MAIN.set('queueSize', playerQueue.length);
+                            //console.log(playerQueue);
+                       }
+                    }
+            );
+        }
+
+        MAIN.observe('playerQueue', function() {
+            var playerQueue = MAIN.get('playerQueue');
+            var waiting = false;
+            for(var i = 0; i < playerQueue.length; i++){
+                if(playerQueue[i].waiting){
+                    waiting = true;
+                }
+            }
+           // MAIN.set('waiting', waiting);
+        });
+
+        MAIN.on("joingame", function () {
+            $.ajax("{{=URL('default', 'enterQueue', user_signature=True)}}",
+                    {
+                        data: {
+                            player_id: "{{=auth.user_id}}",
+                            waiting: true,
+                            ingame: false
+                        },
+                        method: 'POST',
+                        success: function () {
+                            var playerQueue = MAIN.get('playerQueue');
+                            //console.log(playerQueue);
+                            var player_id = "{{=auth.user_id}}";
+                            var notInQueue = true;
+                            for(var i = 0; i < playerQueue.length; i++){
+                                if(playerQueue[i].player_id == player_id) {
+                                    notInQueue = false;
+                                }
+                            }
+                            if(notInQueue) {
+                                var newPlayer = {player_id: player_id, waiting: true, ingame: false};
+                                playerQueue.splice(0, 0, newPlayer);
+                                MAIN.set('playerQueue', playerQueue);
+                                //console.log(playerQueue);
+
+                            } else {
+                                console.log("You're already in the queue.");
+                                //console.log(playerQueue);
+                            }
+                            var queueSize = playerQueue.length;
+                            MAIN.set('queueSize', queueSize);
+                        },
+                        error: function () {
+                            console.log("Can't Join the Queue. Something went wrong.");
+                        }
+                    }
+            );
+        });
+
+        /*MAIN.on("cleansePlayerQueue", function() {
+            var playerQueue = MAIN.get(playerQueue);
+            var newPlayerQueue = [];
+            for(var i = 0; i < playerQueue.length; i++){
+                if(playerQueue[i].waiting && !(playerQueue[i].inGame)){
+                    newPlayerQueue.splice(0, 0, playerQueue[i]);
+                }
+            }
+            MAIN.set('playerQueue', newPlayerQueue);
+
+        });*/
+
+        function sendToGame(gameQueue) {
+            //console.log(player_id);
+            var passOff = JSON.stringify(gameQueue);
+            //console.log(passOff);
+            var deck_id = MAIN.get('deck_id');
+            $.ajax("{{=URL('default', 'enterGame', user_signature=True)}}",
+                    {
+                        data: {
+                            player_id: passOff,
+                            deck_id: deck_id
+                        },
+                        method: 'POST',
+                        success: function (data) {
+                        }
+                    }
+            );
+        }
+        function promotePlayers(){
+            //console.log("promoting");
+            $.ajax("{{=URL('default', 'loadQueue', user_signature=True)}}",
+                {
+                    method: 'POST',
+                    success: function (data) {
+                        var playerQueue = data['playerQueue'];
+                        //MAIN.set('playerQueue', data['playerQueue']);
+                        var player_id = "{{=auth.user_id}}";
+                        var gameQueue = [];
+                        var gamePlayer_ids = [];
+                        //console.log(playerQueue);
+                        //var bounds = playerQueue.length;
+                        if(playerQueue.length != 0 && playerQueue.length % 3 == 0){
+                            for(var i = 0; i < 3; i++){
+                                gameQueue.push(playerQueue[i]);
+                            }
+                            if(player_id == gameQueue[0].player_id) {
+                                for(var k = 0; k < gameQueue.length; k++){
+                                    //sendToGame(gameQueue[k], gameQueue[k].player_id);
+                                    gamePlayer_ids.splice(0, 0, gameQueue[k].player_id);
+                                }
+                                console.log(gamePlayer_ids);
+                                sendToGame(gamePlayer_ids);
+                                var deck_id = MAIN.get('deck_id');
+                            }
+                        }
+                    }
+                }
+            );
+        }
+        function generateUUID(){
+            var d = new Date().getTime();
+            if(window.performance && typeof window.performance.now === "function"){
+                d += performance.now(); //use high-precision timer if available
+            }
+            var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = (d + Math.random()*16)%16 | 0;
+                d = Math.floor(d/16);
+                return (c=='x' ? r : (r&0x3|0x8)).toString(16);
+            });
+            return uuid;
+        }
+
+        function checkForPromotion(){
+            var playerQueue = MAIN.get('playerQueue');
+            if(playerQueue.length % 3 == 0){
+                promotePlayers();
+            }
+        }
+        //periodicLoad();
+        setInterval(checkForPromotion, 5000);
+        setInterval(periodicLoad, 10000);
+
+    })
+</script>

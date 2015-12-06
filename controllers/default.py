@@ -7,14 +7,57 @@ import time
 import random
 
 def index():
+    playerQueue = db(db.player).select()
+    print playerQueue
+    draft_id = gluon_utils.web2py_uuid()
+    return dict(playerQueue=playerQueue, draft_id=draft_id)
+
+@auth.requires_signature()
+def enterQueue():
+    db.player.update_or_insert((db.player.player_id == request.vars.player_id),
+                                player_id=request.vars.player_id,
+                                waiting=request.vars.waiting,
+                                ingame=request.vars.ingame
+                                )
+    return "ok"
+
+@auth.requires_signature()
+def loadQueue():
+    rows = db(db.player).select()
+    d = [dict(player_id=r.player_id, waiting=r.waiting, ingame=r.ingame)
+         for r in rows]
+    #print d
+    return response.json(dict(playerQueue=d))
+
+@auth.requires_signature()
+def enterGame():
+    player_ids = json.loads(request.vars.player_id)
+    #print "player_ids = ", player_ids
+    for player in player_ids:
+        #print player
+        db.player.update_or_insert((db.player.player_id == player),
+                                   waiting=False,
+                                   ingame=True
+                                   )
+    #print player_ids
+    deck_id = request.vars.deck_id
+    print deck_id
+    players_cards = deck_maker(3)
+    db.deck.update_or_insert((db.deck.players == player_ids),
+                             players=player_ids,
+                             deck_id=deck_id,
+                             deck_cards=players_cards
+                             )
+
+    return "ok"
+
+def deck_maker(numpeople):
     deck = []
     suit = ["diamond", "club", "heart", "spade"]
     value = [2, 3, 4, 5, 6, 7, 8, 9, 10, "J", "Q", "K", "A"]
     for x in value:
         for y in suit:          #populates the deck
             deck.append([x, y])
-    print len(deck)
-
     temp = []
     for i in range(len(deck)):  #shuffles the deck
         el = random.choice(deck)
@@ -22,9 +65,6 @@ def index():
         temp.append(el)
     deck = temp
 
-    numpeople = 0
-    for i in db(db.auth_user.id).select():
-        numpeople += 1
     print numpeople
 
     players = []
@@ -35,7 +75,7 @@ def index():
 
     if numpeople == 3:
         players = [player0, player1, player2]
-    elif numpeople == 4:
+    elif numpeople >= 4:
         players = [player0, player1, player2, player3]
 
     player_index = 0
@@ -46,15 +86,15 @@ def index():
         player_index += 1
 
 
-    print "player0 = ", player0
-    print "player1 = ", player1
-    print "player2 = ", player2
-    if numpeople == 4:
-        print "player3 = ", player3
+    print players
 
+    return dict(players=players)
 
+def play():
+    deck_id = request.args(0)
+    print deck_id
+    deck = db(db.deck.deck_id == deck_id).select()
     return dict(deck=deck)
-
 
 def user():
     """
@@ -93,4 +133,9 @@ def call():
     """
     return service()
 
-
+def reset():
+    db(db.player.id > 0).delete()
+    db(db.deck).delete()
+    session.flash = T("Database has been reset")
+    redirect(URL('default', 'index'))
+    return
