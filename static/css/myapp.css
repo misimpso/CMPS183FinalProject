@@ -26,7 +26,7 @@ h1 .loginprompt {
 }
 
 /* line 20, ../sass/_main.scss */
-#content {
+#player {
   min-height: 150px;
   position: relative;
 }
@@ -38,7 +38,14 @@ h1 .loginprompt {
   bottom: 70px;
 }
 
-/* line 29, ../sass/_main.scss */
+/* line 30, ../sass/_main.scss */
+#last_played {
+  text-align: center;
+  position: fixed;
+  top: 70px;
+}
+
+/* line 35, ../sass/_main.scss */
 .cards {
   background: rgba(233, 233, 233, 0.8);
   padding-top: 10px;
