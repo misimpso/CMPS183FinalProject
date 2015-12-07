@@ -27,10 +27,18 @@ h1 .loginprompt {
 
 /* line 20, ../sass/_main.scss */
 #content {
-  text-align: center;
+  min-height: 150px;
+  position: relative;
 }
 
-/* line 23, ../sass/_main.scss */
+/* line 24, ../sass/_main.scss */
+#hand {
+  text-align: center;
+  position: fixed;
+  bottom: 70px;
+}
+
+/* line 29, ../sass/_main.scss */
 .cards {
   background: rgba(233, 233, 233, 0.8);
   padding-top: 10px;

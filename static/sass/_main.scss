@@ -18,7 +18,13 @@ h1 {
   color: $clrHilight;
 }
 #content {
+  min-height: 150px;
+  position: relative;
+}
+#hand {
   text-align: center;
+  position: fixed;
+  bottom: 70px;
 }
 .cards {
   background: rgba(233, 233, 233, 0.8);
