@@ -8,7 +8,7 @@ import random
 
 def index():
     playerQueue = db(db.player).select()
-    print playerQueue
+    #print playerQueue
     draft_id = gluon_utils.web2py_uuid()
     return dict(playerQueue=playerQueue, draft_id=draft_id)
 
@@ -41,13 +41,14 @@ def enterGame():
                                    )
     #print player_ids
     deck_id = request.vars.deck_id
-    print deck_id
-    players_cards = deck_maker(3)
-    db.deck.update_or_insert((db.deck.players == player_ids),
+    #print deck_id
+    player_cards = deck_maker(3)
+    cards = json.dumps(player_cards, separators=(',',':'))
+    print "cards: ", cards
+    db.deck.update_or_insert((db.deck.deck_id == deck_id),
                              players=player_ids,
                              deck_id=deck_id,
-                             deck_cards=players_cards
-                             )
+                             players_cards=cards)
 
     return "ok"
 
@@ -57,7 +58,7 @@ def deck_maker(numpeople):
     value = [2, 3, 4, 5, 6, 7, 8, 9, 10, "J", "Q", "K", "A"]
     for x in value:
         for y in suit:          #populates the deck
-            deck.append([x, y])
+            deck.append((x, y))
     temp = []
     for i in range(len(deck)):  #shuffles the deck
         el = random.choice(deck)
@@ -65,7 +66,7 @@ def deck_maker(numpeople):
         temp.append(el)
     deck = temp
 
-    print numpeople
+    #print numpeople
 
     players = []
     player0 = []
@@ -79,22 +80,58 @@ def deck_maker(numpeople):
         players = [player0, player1, player2, player3]
 
     player_index = 0
-    for i in deck:              #deals the deck
+    for i in deck[:-1]:              #deals the deck
         if player_index == len(players):
             player_index = 0
         players[player_index].append(i)
         player_index += 1
+    for player in players:
+        for cards in player:
+            if deck[51] == (3, 'diamond'):
+                players[0].append((3, 'diamond'))
+            elif cards == (3, 'diamond'):
+                player.append(deck[51])
 
 
-    print players
+    #print players
 
-    return dict(players=players)
+    return {'player0': player0, 'player1': player1, 'player2': player2}
+
+def load_deck():
+    deck_id = request.args(0)
+    rows = db(db.deck.deck_id == deck_id).select()
+    d = [dict(players=r.players, deck_id=r.deck_id, players_cards=r.players_cards)
+         for r in rows]
+    deck = []
+    index = 0
+    for cards in d:
+        for a, b, in cards.iteritems():
+            if index == 2:
+                deck.append(b)
+            index += 1
+    deck = json.loads(deck[0])
+    #print deck
+    return  response.json(dict(deck=deck))
 
 def play():
     deck_id = request.args(0)
-    print deck_id
-    deck = db(db.deck.deck_id == deck_id).select()
-    return dict(deck=deck)
+    rows = db(db.deck.deck_id == deck_id).select()
+    d = [dict(players=r.players, deck_id=r.deck_id, players_cards=r.players_cards)
+         for r in rows]
+    deck = []
+    player_ids = []
+    index = 0
+    for cards in d:
+        for a, b, in cards.iteritems():
+            if index == 0:
+                player_ids.append(b)
+            if index == 2:
+                deck.append(b)
+            index += 1
+    deck = json.loads(deck[0])
+    print player_ids
+    #print deck
+    return dict(deck_id=deck_id, deck=d, players_cards=deck, player_ids=player_ids)
 
 def user():
     """

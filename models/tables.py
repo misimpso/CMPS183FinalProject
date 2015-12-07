@@ -15,6 +15,7 @@
 ## >>> for row in rows: print row.id, row.myfield
 #########################################################################
 
+from json import loads, dumps
 db.define_table('player',
                 Field('player_id'),
                 Field('waiting', 'boolean'),
@@ -24,12 +25,7 @@ db.define_table('player',
 db.define_table('deck',
                 Field('players'),
                 Field('deck_id'),
-                Field('deck_cards')
+                Field('players_cards')
                 )
-
-db.define_table('player_hand',
-                Field('player_id', default=auth.user_id),
-                Field('player_cards'),
-                Field('parent_deck', 'reference deck'),
-                Field('winner', default=False)
-                )
+db.deck.players_cards.filter_in = lambda obj, dumps=dumps: dumps(obj)
+db.deck.players_cards.filter_out = lambda txt, loads=loads: loads(txt)
