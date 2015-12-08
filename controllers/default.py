@@ -32,7 +32,7 @@ def loadQueue():
 @auth.requires_signature()
 def enterGame():
     player_ids = json.loads(request.vars.player_id)
-    #print "player_ids = ", player_ids
+    #print player_ids
     for player in player_ids:
         #print player
         db.player.update_or_insert((db.player.player_id == player),
@@ -109,9 +109,12 @@ def load_deck():
             if index == 2:
                 deck.append(b)
             index += 1
+
+    print deck
     deck = json.loads(deck[0])
     #print deck
-    return  response.json(dict(deck=deck))
+    return response.json(dict(deck=deck))
+
 
 def play():
     deck_id = request.args(0)
@@ -128,10 +131,69 @@ def play():
             if index == 2:
                 deck.append(b)
             index += 1
+
     deck = json.loads(deck[0])
-    print player_ids
+    #print player_ids
     #print deck
     return dict(deck_id=deck_id, deck=d, players_cards=deck, player_ids=player_ids)
+
+@auth.requires_signature()
+def load_hands():
+    deck_id = request.args(0)
+    rows = db(db.hands.deck_id == deck_id).select()
+    d = [dict(deck_id=r.deck_id, last_played_hand=r.last_played_hand, players_hands=r.players_hands)
+         for r in rows]
+    #print d
+    deck = []
+    last_played_hand = []
+    index = 0
+    for cards in d:
+        for a, b, in cards.iteritems():
+            if index == 0:
+                deck.append(b)
+            if index == 1:
+                last_played_hand.append(b)
+            index += 1
+
+    print deck
+    #deck = json.loads(deck[0])
+
+    return response.json(dict(deck=deck))
+
+@auth.requires_signature()
+def load_last_played_hand():
+    deck_id = request.args(0)
+    rows = db(db.hands.deck_id == deck_id).select()
+    d = [dict(deck_id=r.deck_id, last_played_hand=r.last_played_hand, players_hands=r.players_hands)
+         for r in rows]
+    #print d
+    deck = []
+    last_played_hand = []
+    index = 0
+    for cards in d:
+        for a, b, in cards.iteritems():
+            if index == 0:
+                deck.append(b)
+            if index == 1:
+                last_played_hand.append(b)
+            index += 1
+
+    print deck[0]
+    print last_played_hand[0]
+
+    return response.json(dict(last_played_hand=last_played_hand[0]))
+
+@auth.requires_signature()
+def store_hands():
+    deck_id = request.vars.deck_id
+    players_hands = json.loads(request.vars.players_hands)
+    last_played_hand = json.loads(request.vars.last_played_hand)
+    print last_played_hand
+    db.hands.update_or_insert((db.hands.deck_id == deck_id),
+                             deck_id=request.vars.deck_id,
+                             last_played_hand=last_played_hand,
+                             players_hands=players_hands)
+    return "ok"
 
 def user():
     """

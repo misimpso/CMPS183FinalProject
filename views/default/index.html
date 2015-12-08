@@ -140,7 +140,7 @@
         function sendToGame(gameQueue) {
             //console.log(player_id);
             var passOff = JSON.stringify(gameQueue);
-            //console.log(passOff);
+            console.log(passOff);
             var deck_id = MAIN.get('deck_id');
             $.ajax("{{=URL('default', 'enterGame', user_signature=True)}}",
                     {
