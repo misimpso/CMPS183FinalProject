@@ -30,9 +30,10 @@ db.define_table('deck',
 db.define_table('hands',
                 Field('deck_id'),
                 Field('last_played_hand'),
-                Field('players_hands')
+                Field('players_hands'),
+                Field('turns'),
+                Field('players_pass')
                 )
 db.deck.players_cards.filter_in = lambda obj, dumps=dumps: dumps(obj)
 db.deck.players_cards.filter_out = lambda txt, loads=loads: loads(txt)
-db.hands.players_hands.filter_in = lambda obj, dumps=dumps: dumps(obj)
-db.hands.players_hands.filter_out = lambda txt, loads=loads: loads(txt)
+

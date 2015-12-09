@@ -110,7 +110,7 @@ def load_deck():
                 deck.append(b)
             index += 1
 
-    print deck
+    #print deck
     deck = json.loads(deck[0])
     #print deck
     return response.json(dict(deck=deck))
@@ -143,7 +143,7 @@ def load_hands():
     rows = db(db.hands.deck_id == deck_id).select()
     d = [dict(deck_id=r.deck_id, last_played_hand=r.last_played_hand, players_hands=r.players_hands)
          for r in rows]
-    #print d
+    print d
     deck = []
     last_played_hand = []
     index = 0
@@ -156,43 +156,70 @@ def load_hands():
             index += 1
 
     print deck
-    #deck = json.loads(deck[0])
+    deck = deck[0]
 
-    return response.json(dict(deck=deck))
+    return response.json(deck)
 
 @auth.requires_signature()
 def load_last_played_hand():
     deck_id = request.args(0)
     rows = db(db.hands.deck_id == deck_id).select()
-    d = [dict(deck_id=r.deck_id, last_played_hand=r.last_played_hand, players_hands=r.players_hands)
+    d = [dict(last_played_hand=r.last_played_hand)
          for r in rows]
     #print d
-    deck = []
     last_played_hand = []
     index = 0
     for cards in d:
         for a, b, in cards.iteritems():
             if index == 0:
-                deck.append(b)
-            if index == 1:
                 last_played_hand.append(b)
             index += 1
 
-    print deck[0]
-    print last_played_hand[0]
+    print last_played_hand
 
-    return response.json(dict(last_played_hand=last_played_hand[0]))
+    return response.json(last_played_hand[0])
+
+@auth.requires_signature()
+def load_turns():
+    deck_id = request.args(0)
+    rows = db(db.hands.deck_id == deck_id).select()
+    d = [dict(turns=r.turns, players_pass=r.players_pass)
+         for r in rows]
+    #print d
+    turns = []
+    players_pass = []
+    index = 0
+    for cards in d:
+        for a, b, in cards.iteritems():
+            if index == 0:
+                turns.append(b)
+            if index == 1:
+                players_pass.append(b)
+            index += 1
+
+    print turns
+    #print last_played_hand[0]
+    turns_n_pass = [str(turns[0]) + str(players_pass[0])]
+
+    print turns_n_pass
+
+    return response.json(turns_n_pass[0])
 
 @auth.requires_signature()
 def store_hands():
     deck_id = request.vars.deck_id
     players_hands = json.loads(request.vars.players_hands)
     last_played_hand = json.loads(request.vars.last_played_hand)
-    print last_played_hand
+    turns = json.loads(request.vars.turns)
+    players_pass = json.loads(request.vars.players_pass)
+    #print players_hands
+    #print last_played_hand
     db.hands.update_or_insert((db.hands.deck_id == deck_id),
                              deck_id=request.vars.deck_id,
                              last_played_hand=last_played_hand,
-                             players_hands=players_hands)
+                             players_hands=players_hands,
+                             turns=turns,
+                             players_pass=players_pass)
     return "ok"
 
 def user():
