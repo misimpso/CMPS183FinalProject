@@ -27,6 +27,9 @@ db.define_table('deck',
                 Field('deck_id'),
                 Field('players_cards')
                 )
+
+db.deck.migrate = True
+db.deck.fake_migrate = True
 db.define_table('hands',
                 Field('deck_id'),
                 Field('last_played_hand'),
